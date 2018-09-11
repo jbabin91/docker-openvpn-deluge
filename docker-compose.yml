@@ -1,0 +1,42 @@
+version: '3.4'
+
+services:
+  vpn_proxy:
+    image: act28/pia-openvpn-proxy
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    dns:
+      - 209.222.18.218
+      - 209.222.18.222
+    # volumes:
+    # - /etc/localtime:/etc/localtime:ro
+    environment:
+      - REGION=US West
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - LOCAL_NETWORK=192.168.65.0/24
+    networks:
+      - vpn_proxy
+    ports:
+      - 8118:8118
+      - 8112:8112
+    restart: always
+
+  deluge:
+    container_name: deluge
+    image: linuxserver/deluge:102
+    restart: unless-stopped
+    # network_mode: service:vpn # run on the vpn network
+    network_mode: service:vpn_proxy # run on the vpn network
+    environment:
+      - PUID=1000 # default user id, for downloaded files access rights
+      - PGID=1000 # default group id, for downloaded files access rights
+      - TZ=Europe/Paris # timezone
+    volumes:
+      - ./data1/downloads/deluge:/downloads # download folder
+      - ./.config/deluge:/config # config files
+
+networks:
+  ? vpn_proxy
